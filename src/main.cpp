@@ -33,6 +33,69 @@ auto main(int argc, char* argv[]) -> int
 
     gl3wInit();
 
+    // Setup shaders
+    float vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f};
+
+    // These shaders process the vertices
+    const char* vert =
+        "#version 330 core\n"
+        "layout (location = 0) in vec3 aPos;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+        "}\0";
+
+    const char* frag =
+        "#version 330 core\n"
+        "out vec4 FragColor;\n"
+        "void main()\n"
+        "{\n"
+        "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "}\0";
+
+    // Compile shaders and link
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vs, 1, &vert, NULL);
+    glCompileShader(vs);
+
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fs, 1, &frag, NULL);
+    glCompileShader(fs);
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
+    glLinkProgram(program);
+
+    // These can be deleted now they have been attached to the program and linked
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    // Vertex array object for storing vertex attribute calls
+    GLuint vao = 0;
+    // Vertex buffer object for storing vertices in the GPU
+    GLuint vbo = 0;
+
+    glGenBuffers(1, &vbo);
+    glGenVertexArrays(1, &vao);
+
+    // Bind the VAO first, then bind and configure the VBOs
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    // Configure the currently bound buffer (vbo), and copy the vertices into it. This is why its a
+    // "state machine"
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // How to interpret the vertex data
+    // 0 specifies which vertex attribute to configure, related to layout (location = 0) in the
+    // shader 3 is the size of the vertex atttribute, and its a vec3 3 * sizeof is the stride, the
+    // space between consecutive vertex attributes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // Each vertex attribute takes its data from memory managed by the VBO, and which VBO it takes
+    // it from is determined by the VBO currently bound to GL_ARRAY_BUFFER. Similarly 0 here is the
+    // location
+    glEnableVertexAttribArray(0);
+
     bool run = true;
     while (run)
     {
@@ -59,13 +122,20 @@ auto main(int argc, char* argv[]) -> int
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        /// @todo
+        /// @todo what is this actually doing?
+        glUseProgram(program);
+        // Bind before drawing
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // End of the render loop
         // This will swap the window for double buffering, displaying the current contents of the
         // buffer on the screen
         SDL_GL_SwapWindow(window);
     }
+
+    glDeleteBuffers(1, &vbo);
+    glDeleteVertexArrays(1, &vao);
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
