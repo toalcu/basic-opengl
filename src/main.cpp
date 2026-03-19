@@ -34,23 +34,32 @@ auto main(int argc, char* argv[]) -> int
     gl3wInit();
 
     // Setup shaders
-    float vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f};
+    float vertices[] = {
+        // positions         // colors
+        0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
+        0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // top
+    };
 
     // These shaders process the vertices
     const char* vert =
         "#version 330 core\n"
         "layout (location = 0) in vec3 aPos;\n"
+        "layout (location = 1) in vec3 aColour;\n"
+        "out vec3 outColour;\n"
         "void main()\n"
         "{\n"
-        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+        "   gl_Position = vec4(aPos, 1.0);\n"
+        "   outColour = aColour;\n"
         "}\0";
 
     const char* frag =
         "#version 330 core\n"
-        "out vec4 FragColor;\n"
+        "out vec4 FragColour;\n"
+        "in vec3 outColour;\n"
         "void main()\n"
         "{\n"
-        "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "    FragColour = vec4(outColour, 1.0f);\n"
         "}\0";
 
     // Compile shaders and link
@@ -87,14 +96,15 @@ auto main(int argc, char* argv[]) -> int
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // How to interpret the vertex data
-    // 0 specifies which vertex attribute to configure, related to layout (location = 0) in the
-    // shader 3 is the size of the vertex atttribute, and its a vec3 3 * sizeof is the stride, the
-    // space between consecutive vertex attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     // Each vertex attribute takes its data from memory managed by the VBO, and which VBO it takes
     // it from is determined by the VBO currently bound to GL_ARRAY_BUFFER. Similarly 0 here is the
     // location
     glEnableVertexAttribArray(0);
+
+    // Colour attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     bool run = true;
     while (run)
