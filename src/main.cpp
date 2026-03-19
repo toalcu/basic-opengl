@@ -1,7 +1,11 @@
-#include <GL/gl3w.h>
 #include <SDL2/SDL.h>
 
+#include <array>
 #include <iostream>
+
+#include "shader.hpp"
+
+static const uint16_t k_max_program_info_log_size = 1024;
 
 auto main(int argc, char* argv[]) -> int
 {
@@ -41,44 +45,29 @@ auto main(int argc, char* argv[]) -> int
         0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // top
     };
 
-    // These shaders process the vertices
-    const char* vert =
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 aPos;\n"
-        "layout (location = 1) in vec3 aColour;\n"
-        "out vec3 outColour;\n"
-        "void main()\n"
-        "{\n"
-        "   gl_Position = vec4(aPos, 1.0);\n"
-        "   outColour = aColour;\n"
-        "}\0";
-
-    const char* frag =
-        "#version 330 core\n"
-        "out vec4 FragColour;\n"
-        "in vec3 outColour;\n"
-        "void main()\n"
-        "{\n"
-        "    FragColour = vec4(outColour, 1.0f);\n"
-        "}\0";
-
-    // Compile shaders and link
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs, 1, &vert, NULL);
-    glCompileShader(vs);
-
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs, 1, &frag, NULL);
-    glCompileShader(fs);
+    Shader vert = Shader(Shader::Type::Vertex, "basic_vs");
+    Shader frag = Shader(Shader::Type::Fragment, "basic_fs");
 
     GLuint program = glCreateProgram();
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
+    glAttachShader(program, vert.get_idx());
+    glAttachShader(program, frag.get_idx());
     glLinkProgram(program);
 
-    // These can be deleted now they have been attached to the program and linked
-    glDeleteShader(vs);
-    glDeleteShader(fs);
+    GLint success = GL_FALSE;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+
+    if (success != GL_TRUE)
+    {
+        std::array<char, k_max_program_info_log_size> error_output;
+        glGetProgramInfoLog(program, k_max_program_info_log_size, nullptr, error_output.data());
+        std::cerr << "Program compilation errors: " << error_output.data() << std::endl;
+
+        SDL_GL_DeleteContext(gl_context);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+
+        return 1;
+    }
 
     // Vertex array object for storing vertex attribute calls
     GLuint vao = 0;
