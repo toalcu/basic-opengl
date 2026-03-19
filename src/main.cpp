@@ -47,8 +47,13 @@ auto main(int argc, char* argv[]) -> int
             }
         }
 
+        // Set the states before drawing for sanity. Setting these every frame is good enough for
+        // now See https://wikis.khronos.org/opengl/OpenGL_Object
         int width, height;
         SDL_GetWindowSize(window, &width, &height);
+
+        // See https://registry.khronos.org/OpenGL-Refpages/gl4/html/glViewport.xhtml
+        // x,y rel to lower left corner of viewport rect
         glViewport(0, 0, width, height);
 
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
@@ -56,6 +61,9 @@ auto main(int argc, char* argv[]) -> int
 
         /// @todo
 
+        // End of the render loop
+        // This will swap the window for double buffering, displaying the current contents of the
+        // buffer on the screen
         SDL_GL_SwapWindow(window);
     }
 
