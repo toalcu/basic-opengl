@@ -122,10 +122,13 @@ auto main(int argc, char* argv[]) -> int
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        /// @todo what is this actually doing?
+        // Use programs to run on the vert and frag processors for the already-compiled shaders
         glUseProgram(program);
         // Bind before drawing
         glBindVertexArray(vao);
+        // It's triangles all the way down. They are the simplest polygon that is always planar and
+        // always well defined for rasterisation, and any more complex shape can be broken down into
+        // them
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // End of the render loop
