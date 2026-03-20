@@ -6,8 +6,6 @@
 #include "program.hpp"
 #include "shader.hpp"
 
-static const uint16_t k_max_program_info_log_size = 1024;
-
 auto main(int argc, char* argv[]) -> int
 {
     // See https://wiki.libsdl.org/SDL3/SDL_InitFlags#syntax
@@ -48,7 +46,6 @@ auto main(int argc, char* argv[]) -> int
 
     Shader vert = Shader(Shader::Type::Vertex, "basic_vs");
     Shader frag = Shader(Shader::Type::Fragment, "basic_fs");
-
     Program program = Program(vert, frag);
 
     if (!program.is_ok())

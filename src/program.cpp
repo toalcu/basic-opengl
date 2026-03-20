@@ -29,6 +29,9 @@ Program::Program(const Shader& vs_shader_, const Shader& fs_shader_) :
         glGetProgramInfoLog(m_idx, k_max_program_info_log_size, nullptr, error_output.data());
         std::cerr << "Program compilation errors: " << error_output.data() << std::endl;
     }
+
+    glDetachShader(m_idx, vs_shader_.get_idx());
+    glDetachShader(m_idx, fs_shader_.get_idx());
 }
 
 Program::Program(Program&& other_)
