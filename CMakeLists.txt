@@ -22,6 +22,7 @@ add_executable(
   ${PROJECT_NAME}
   src/main.cpp
   src/shader.cpp
+  src/program.cpp
   external/gl3w/src/gl3w.c
 )
 

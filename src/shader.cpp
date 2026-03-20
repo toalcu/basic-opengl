@@ -12,7 +12,7 @@ static const auto k_shader_gl_types =
     std::array<int, static_cast<uint8_t>(Shader::Type::Num)>{GL_VERTEX_SHADER, GL_FRAGMENT_SHADER};
 
 Shader::Shader(const Type type_, const std::string& filename_) :
-    m_idx{GL_INVALID_INDEX}, m_type{type_}
+    m_idx{GL_INVALID_INDEX}, m_type{type_}, m_is_ok{false}
 {
     const std::string shader_path = std::string(SHADER_DIR) + "/" + filename_ + ".glsl";
     std::string shader_source = read_from_file(shader_path);
@@ -24,13 +24,14 @@ Shader::Shader(const Type type_, const std::string& filename_) :
     glShaderSource(m_idx, 1, &gl_shader_source, nullptr);
     glCompileShader(m_idx);
 
-    if (check_compilation_succeeded())
+    GLint success = GL_FALSE;
+    glGetShaderiv(m_idx, GL_COMPILE_STATUS, &success);
+    m_is_ok = (success == GL_TRUE);
+    if (!m_is_ok)
     {
-        std::cout << "Successfully compiled shader " << shader_path << std::endl;
-    }
-    else
-    {
-        std::cerr << "Failed to compile shader " << shader_path << std::endl;
+        std::array<char, k_max_shader_info_log_size> error_output;
+        glGetShaderInfoLog(m_idx, k_max_shader_info_log_size, nullptr, error_output.data());
+        std::cerr << "Shader compilation errors: " << error_output.data() << std::endl;
     }
 }
 
@@ -50,6 +51,8 @@ Shader::~Shader()
     }
 }
 
+bool Shader::is_ok() const { return m_is_ok; }
+
 GLuint Shader::get_idx() const { return m_idx; }
 
 std::string Shader::read_from_file(const std::string& path_)
@@ -65,20 +68,4 @@ std::string Shader::read_from_file(const std::string& path_)
     ss << file.rdbuf();
 
     return ss.str();
-}
-
-bool Shader::check_compilation_succeeded() const
-{
-    GLint success = GL_FALSE;
-    glGetShaderiv(m_idx, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        std::array<char, k_max_shader_info_log_size> error_output;
-        glGetShaderInfoLog(m_idx, k_max_shader_info_log_size, nullptr, error_output.data());
-        std::cerr << "Shader compilation errors: " << error_output.data() << std::endl;
-
-        return false;
-    }
-
-    return true;
 }

@@ -25,22 +25,21 @@ public:
 
     /**
      * @brief Copy constructors are disabled as we only want one shader associated with the current
-     * source
+     * source.
      *
      * @param other_ The shader not to copy
      */
     Shader(const Shader& other_) = delete;
 
     /**
-     * @brief Move constructors are enabled and ownership of the shader is transferred to the
-     * current shader object
+     * @brief Ownership of the shader is transferred to the current shader object.
      *
      * @param other_ The shader to move from
      */
     Shader(Shader&& other_);
 
     /**
-     * @brief Free up resources associated with the shader
+     * @brief Frees up resources associated with the shader.
      */
     ~Shader();
 
@@ -48,16 +47,23 @@ public:
     Shader& operator=(Shader&& other_);
 
     /**
+     * @brief Returns true if the shader was compiled successfully.
+     *
+     * @return True if the shader can be used, false otherwise
+     */
+    bool is_ok() const;
+
+    /**
      * @brief Returns the shader index.
      *
-     * @return The shader index.
+     * @return The shader index
      */
     GLuint get_idx() const;
 
 private:
     GLuint m_idx;
     Type m_type;
+    bool m_is_ok;
 
     std::string read_from_file(const std::string& path_);
-    bool check_compilation_succeeded() const;
 };

@@ -3,6 +3,7 @@
 #include <array>
 #include <iostream>
 
+#include "program.hpp"
 #include "shader.hpp"
 
 static const uint16_t k_max_program_info_log_size = 1024;
@@ -48,20 +49,10 @@ auto main(int argc, char* argv[]) -> int
     Shader vert = Shader(Shader::Type::Vertex, "basic_vs");
     Shader frag = Shader(Shader::Type::Fragment, "basic_fs");
 
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vert.get_idx());
-    glAttachShader(program, frag.get_idx());
-    glLinkProgram(program);
+    Program program = Program(vert, frag);
 
-    GLint success = GL_FALSE;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-
-    if (success != GL_TRUE)
+    if (!program.is_ok())
     {
-        std::array<char, k_max_program_info_log_size> error_output;
-        glGetProgramInfoLog(program, k_max_program_info_log_size, nullptr, error_output.data());
-        std::cerr << "Program compilation errors: " << error_output.data() << std::endl;
-
         SDL_GL_DeleteContext(gl_context);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -121,8 +112,7 @@ auto main(int argc, char* argv[]) -> int
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Use programs to run on the vert and frag processors for the already-compiled shaders
-        glUseProgram(program);
+        program.use();
         // Bind before drawing
         glBindVertexArray(vao);
         // It's triangles all the way down. They are the simplest polygon that is always planar and
