@@ -132,9 +132,25 @@ auto main(int argc, char* argv[]) -> int
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    // Camera
+    glm::vec3 camera_pos = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 camera_front = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    float yaw = -90.0f;
+    float pitch = 0.0f;
+    float mouse_sensitivity = 0.1f;
+    float camera_speed = 2.5f;
+
+    float last_frame = SDL_GetTicks() / 1000.0f;
+
     bool run = true;
     while (run)
     {
+        float current_frame = SDL_GetTicks() / 1000.0f;
+        float delta_time = current_frame - last_frame;
+        last_frame = current_frame;
+
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -144,7 +160,41 @@ auto main(int argc, char* argv[]) -> int
             {
                 run = false;
             }
+
+            if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_ESCAPE) run = false;
+            }
+
+            if (event.type == SDL_MOUSEMOTION)
+            {
+                float xoffset = static_cast<float>(event.motion.xrel) * mouse_sensitivity;
+                float yoffset = static_cast<float>(event.motion.yrel) * mouse_sensitivity;
+
+                yaw += xoffset;
+                pitch -= yoffset;
+
+                if (pitch > 89.0f) pitch = 89.0f;
+                if (pitch < -89.0f) pitch = -89.0f;
+
+                glm::vec3 direction;
+                direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+                direction.y = sin(glm::radians(pitch));
+                direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+                camera_front = glm::normalize(direction);
+            }
         }
+
+        const Uint8* keys = SDL_GetKeyboardState(nullptr);
+        float velocity = camera_speed * delta_time;
+
+        glm::vec3 camera_right = glm::normalize(glm::cross(camera_front, world_up));
+        glm::vec3 camera_up = glm::normalize(glm::cross(camera_right, camera_front));
+
+        if (keys[SDL_SCANCODE_W]) camera_pos += camera_front * velocity;
+        if (keys[SDL_SCANCODE_S]) camera_pos -= camera_front * velocity;
+        if (keys[SDL_SCANCODE_A]) camera_pos -= camera_right * velocity;
+        if (keys[SDL_SCANCODE_D]) camera_pos += camera_right * velocity;
 
         // Set the states before drawing for sanity. Setting these every frame is good enough for
         // now See https://wikis.khronos.org/opengl/OpenGL_Object
@@ -165,8 +215,7 @@ auto main(int argc, char* argv[]) -> int
         model = glm::rotate(model, (float)SDL_GetTicks() / 1000.0f * glm::radians(50.0f),
                             glm::vec3(0.5f, 1.0f, 0.0f));
 
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        glm::mat4 view = glm::lookAt(camera_pos, camera_pos + camera_front, camera_up);
 
         glm::mat4 projection =
             glm::perspective(glm::radians(45.0f),
