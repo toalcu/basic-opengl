@@ -1,6 +1,9 @@
 #include <SDL2/SDL.h>
 
 #include <array>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
 #include "program.hpp"
@@ -36,16 +39,41 @@ auto main(int argc, char* argv[]) -> int
 
     gl3wInit();
 
-    // Setup shaders
     float vertices[] = {
-        // positions         // colors
-        0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
-        0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f   // top
-    };
+        // positions              // colours
 
-    Shader vert = Shader(Shader::Type::Vertex, "basic_vs");
-    Shader frag = Shader(Shader::Type::Fragment, "basic_fs");
+        // front face
+        -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f, 0.5f,
+        1.0f, 0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
+
+        // back face
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f,
+        -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, -0.5f, -0.5f, 0.0f,
+        1.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+
+        // left face
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, -0.5f, -0.5f,
+        -0.5f, 0.0f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, -0.5f, -0.5f, 0.5f, 0.0f,
+        0.0f, 1.0f, -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+
+        // right face
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 0.5f, 0.5f, -0.5f,
+        1.0f, 1.0f, 0.0f, 0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 1.0f, 0.0f,
+
+        // top face
+        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 1.0f, -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+        1.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 1.0f,
+
+        // bottom face
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, -0.5f, -0.5f,
+        0.5f, 0.0f, 1.0f, 1.0f, 0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f,
+        1.0f, 1.0f, 0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f};
+
+    Shader vert = Shader(Shader::Type::Vertex, "cube_vs");
+    Shader frag = Shader(Shader::Type::Fragment, "cube_fs");
     Program program = Program(vert, frag);
 
     if (!program.is_ok())
@@ -105,17 +133,38 @@ auto main(int argc, char* argv[]) -> int
         // See https://registry.khronos.org/OpenGL-Refpages/gl4/html/glViewport.xhtml
         // x,y rel to lower left corner of viewport rect
         glViewport(0, 0, width, height);
+        glEnable(GL_DEPTH_TEST);
 
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         program.use();
+
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)SDL_GetTicks() / 1000.0f * glm::radians(50.0f),
+                            glm::vec3(0.5f, 1.0f, 0.0f));
+
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+        glm::mat4 projection =
+            glm::perspective(glm::radians(45.0f),
+                             static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+
+        unsigned int model_loc = glGetUniformLocation(program.get_idx(), "model");
+        unsigned int view_loc = glGetUniformLocation(program.get_idx(), "view");
+        unsigned int projection_loc = glGetUniformLocation(program.get_idx(), "projection");
+
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(projection));
+
         // Bind before drawing
         glBindVertexArray(vao);
         // It's triangles all the way down. They are the simplest polygon that is always planar and
         // always well defined for rasterisation, and any more complex shape can be broken down into
         // them
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // End of the render loop
         // This will swap the window for double buffering, displaying the current contents of the
